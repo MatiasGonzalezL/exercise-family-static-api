@@ -6,7 +6,6 @@ from flask import Flask, request, jsonify, url_for
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from datastructures import FamilyStructure
-#from models import Person
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -25,32 +24,43 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
+
 @app.route('/members', methods=['GET'])
 def handle_hello():
     # this is how you can use the Family datastructure by calling its methods
     members = jackson_family.get_all_members()
-    print(f"Endpoint: {members}")
-    response_body = {
-        "hello": "world",
-        "family": members
-    }
-    return jsonify(response_body), 200
+    return jsonify(members), 200
 
-@app.route('/members/<int:member_id>', methods=['GET'])
-def get_member_by_id(member_id):
-    response = jackson_family.get_member(member_id)
-    return jsonify(response), 200
 
 @app.route('/member', methods=['POST'])
 def add_member_by_name():
-    body = request.body.json()
-    response = jackson_family.add_member(body)
-    return jsonify(response), 200
+    member = request.json
+    if "id" not in list(member.keys()):
+        member["id"] = jackson_family._generateId()
+    jackson_family.add_member_by_name(member)
+    response_body = {
+        "member": member
+    }
+    return jsonify(response_body), 200
 
-@app.route('/member/<int:member_id>', methods=['DELETE'])
-def delete_member_by_id(member_id):
-    response = jackson_family.delete_member(member_id)
-    return jsonify(response), 200
+
+@app.route('/member/<int:id>', methods=['GET'])
+def get_member_here(id):
+    member = jackson_family.get_member(id)
+    if member == []:
+        return jsonify({}), 404
+    return jsonify(member[0]), 200
+
+
+@app.route('/member/<int:id>', methods=['DELETE'])
+def delete_member(id):
+    member = jackson_family.get_member(id)
+    if member != []:
+        jackson_family.delete_member(id)
+    response_body = {
+        "done": True
+    }
+    return jsonify(response_body), 200
     
 
 
